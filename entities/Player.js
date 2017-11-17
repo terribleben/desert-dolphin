@@ -49,14 +49,14 @@ export default class Player {
       this._mesh.rotation.z = this._velocity.angle() + 3.142;
     }
 
-    const terrainY = GameState.terrain.getTerrainY(this._mesh.position.x);
+    const terrainY = GameState.world.terrain.getTerrainY(this._mesh.position.x);
 
     if (this._mesh.position.x > GameState.viewport.width * 0.5 || this._mesh.position.x < GameState.viewport.width * -0.5) {
       this._reset();
     }
     if (this._mesh.position.y < terrainY) {
       // TODO: bounce/coast if angle is acute enough
-      if (GameState.terrain.isInPool(this._mesh.position.x)) {
+      if (GameState.world.terrain.isInPool(this._mesh.position.x)) {
         Store.dispatch({ type: 'HIT' });
         this._reset();
       } else {
@@ -91,9 +91,9 @@ export default class Player {
     if (!this._isJumping && !this._hasJumped) {
       this._isJumping = true;
       let pan = new THREE.Vector2(touch.translationX, touch.translationY);
-      pan.clampLength(-60, 60);
+      pan.clampLength(-72, 72);
       pan.multiplyScalar(0.001);
-      this._mesh.position.y = GameState.terrain.getTerrainY(this._mesh.position.x);
+      this._mesh.position.y = GameState.world.terrain.getTerrainY(this._mesh.position.x);
       this._velocity.x = -pan.x;
       this._velocity.y = pan.y;
       this._material.opacity = 1;

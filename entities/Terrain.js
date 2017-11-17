@@ -4,14 +4,14 @@ import GameState from '../state/GameState';
 
 const TERRAIN_NUM_SPANS = 12;
 const TERRAIN_NEUTRAL_Y = 0.0;
-        const POOL_TERRAIN_DEPTH = 0.1;
+const POOL_TERRAIN_DEPTH = 0.1;
 
 export default class Terrain {
-  constructor() {
+  constructor(previousTerrain) {
     const scene = GameState.scene;
     this._poolIndex = 8 + Math.ceil(Math.random() * 2);
-    this._spans = this._generateTerrain(0);
-    
+    this._spans = this._generateTerrain(0, previousTerrain);
+
     this._groundMaterial = new THREE.MeshBasicMaterial({ color: 0xe28631 });
     this._groundMesh = new THREE.Mesh(this._makeShapeGeometry(this._spans), this._groundMaterial);
     scene.add(this._groundMesh);
@@ -22,6 +22,19 @@ export default class Terrain {
     this._poolMesh.position.y = this.getTerrainY(this._poolMesh.position.x);
     this._poolMesh.position.z = 11;
     scene.add(this._poolMesh);
+
+    if (previousTerrain) {
+      const indexIntoPreviousTerrain = previousTerrain._poolIndex - 1;
+      const initialXPosition = (GameState.viewport.width / TERRAIN_NUM_SPANS) * indexIntoPreviousTerrain;
+      this.updateXPosition(initialXPosition);
+    }
+  }
+
+  updateXPosition = (x) => {
+    if (x) {
+      this._poolMesh.position.x += x;
+      this._groundMesh.position.x += x;
+    }
   }
 
   destroy = () => {
@@ -78,12 +91,27 @@ export default class Terrain {
     return new THREE.ShapeGeometry(shape);
   }
 
-  _generateTerrain = (startY) => {
+  getFinalY = () => {
+    if (this._spans) {
+      return this._spans[TERRAIN_NUM_SPANS - 1][1];
+    }
+    return 0;
+  }
+
+  _generateTerrain = (startY, previousTerrain) => {
     let spans = [];
     let prevY = startY;
+    let indexIntoPreviousTerrain;
+    if (previousTerrain) {
+      indexIntoPreviousTerrain = previousTerrain._poolIndex - 1;
+    }
     for (let ii = 0; ii < TERRAIN_NUM_SPANS; ii++) {
       let span;
-      if (ii == this._poolIndex) {
+      if (previousTerrain && indexIntoPreviousTerrain && indexIntoPreviousTerrain < TERRAIN_NUM_SPANS) {
+        span = previousTerrain._spans[indexIntoPreviousTerrain];
+        prevY = span[1];
+        indexIntoPreviousTerrain++;
+      } else if (ii == this._poolIndex) {
         span = [
           prevY - POOL_TERRAIN_DEPTH,
           prevY - 0.05 + Math.random() * 0.1 - POOL_TERRAIN_DEPTH,

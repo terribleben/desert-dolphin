@@ -5,16 +5,15 @@ import {
   PanGestureHandler,
   State,
 } from 'react-native-gesture-handler';
+import { connect } from 'react-redux';
 
 import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
 import GameHUD from '../components/GameHUD';
+import World from '../entities/World';
 
-import Terrain from '../entities/Terrain';
-import Player from '../entities/Player';
-
-export default class GameScreen extends React.Component {
+class GameScreen extends React.Component {
   render() {
     return (
       <PanGestureHandler
@@ -32,24 +31,32 @@ export default class GameScreen extends React.Component {
     );
   }
 
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.hit && nextProps.hit > 0 && nextProps.hit !== this.props.hit) {
+      if (GameState.world) {
+        GameState.world.advanceLevel();
+      }
+    }
+  }
+
   _onPanGestureEvent = event => {
     if (!event.nativeEvent) { return; }
-    if (!GameState.player) { return; }
+    if (!GameState.world.player) { return; }
     
-    GameState.player.onTouchMove(event.nativeEvent);
+    GameState.world.player.onTouchMove(event.nativeEvent);
   }
   
   _onPanGestureStateChange = event => {
     if (!event.nativeEvent) { return; }
-    if (!GameState.player) { return; }
+    if (!GameState.world.player) { return; }
     
     const { state } = event.nativeEvent;
     switch (state) {
     case State.ACTIVE:
-      GameState.player.onTouchBegin(event.nativeEvent);
+      GameState.world.player.onTouchBegin(event.nativeEvent);
       break;
     case State.END: case State.CANCELLED:
-      GameState.player.onTouchEnd(event.nativeEvent);
+      GameState.world.player.onTouchEnd(event.nativeEvent);
       break;
     default:
       break;
@@ -59,22 +66,15 @@ export default class GameScreen extends React.Component {
   _onGLContextCreate = async (glContext) => {
     this._glContext = glContext;
     await this._rebuildAsync();
-
-    // TODO: kill me
-    const geometry = new THREE.PlaneBufferGeometry(GameState.viewport.width, GameState.viewport.height);
-    const bgMaterial = new THREE.MeshBasicMaterial( { color: 0xddac67 } );
-    const bgMesh = new THREE.Mesh(geometry, bgMaterial);
-    GameState.scene.add(bgMesh);
-    GameState.terrain = new Terrain();
-    GameState.player = new Player();
-
+    GameState.world = new World();
+    
     let lastFrameTime;
     const render = () => {
       requestAnimationFrame(render);
       const now = 0.001 * global.nativePerformanceNow();
       const dt = typeof lastFrameTime !== "undefined" ? now - lastFrameTime : 0.16666;
 
-      GameState.player.tick(dt);
+      GameState.world.tick(dt);
       this._renderer.render(GameState.scene, GameState.camera);
 
       this._glContext.endFrameEXP();
@@ -128,13 +128,8 @@ export default class GameScreen extends React.Component {
   }
 
   _destroy = () => {
-    if (GameState.terrain) {
-      GameState.terrain.destroy();
-      GameState.terrain = null;
-    }
-    if (GameState.player) {
-      GameState.player.destroy();
-      GameState.player = null;
+    if (GameState.world) {
+      GameState.world.destroy();
     }
   }
 }
@@ -148,3 +143,5 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
 });
+
+export default connect((state) => ({ hit: state.hit }))(GameScreen);
