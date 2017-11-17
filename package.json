@@ -6,6 +6,7 @@
     "expo-three": "^2.0.3",
     "react": "16.0.0",
     "react-native": "https://github.com/expo/react-native/archive/sdk-23.0.0.tar.gz",
+    "react-native-gesture-handler": "^1.0.0-alpha.31",
     "three": "^0.88.0"
   }
 }

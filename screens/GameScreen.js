@@ -1,21 +1,55 @@
 import Expo from 'expo';
 import React from 'react';
 import { View } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+} from 'react-native-gesture-handler';
 
 import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
 import Terrain from '../entities/Terrain';
+import Player from '../entities/Player';
 
 export default class GameScreen extends React.Component {
   render() {
     return (
-      <Expo.GLView
-        style={{ flex: 1 }}
-        onContextCreate={this._onGLContextCreate}
-      />
+      <PanGestureHandler
+        id="pan"
+        onGestureEvent={this._onPanGestureEvent}
+        onHandlerStateChange={this._onPanGestureStateChange}>
+        <Expo.GLView
+          style={{ flex: 1 }}
+          onContextCreate={this._onGLContextCreate}
+          />
+      </PanGestureHandler>
     );
   }
+
+  _onPanGestureEvent = event => {
+    if (!event.nativeEvent) { return; }
+    if (!this._player) { return; }
+    
+    this._player.onTouchMove(event.nativeEvent);
+  }
+  
+  _onPanGestureStateChange = event => {
+    if (!event.nativeEvent) { return; }
+    if (!this._player) { return; }
+    
+    const { state } = event.nativeEvent;
+    switch (state) {
+    case State.ACTIVE:
+      this._player.onTouchBegin(event.nativeEvent);
+      break;
+    case State.END: case State.CANCELLED:
+      this._player.onTouchEnd(event.nativeEvent);
+      break;
+    default:
+      break;
+    }
+  };
 
   _onGLContextCreate = async (glContext) => {
     this._glContext = glContext;
@@ -27,13 +61,19 @@ export default class GameScreen extends React.Component {
     const bgMesh = new THREE.Mesh(geometry, bgMaterial);
     GameState.scene.add(bgMesh);
     this._terrain = new Terrain();
-    
+    this._player = new Player();
+
+    let lastFrameTime;
     const render = () => {
       requestAnimationFrame(render);
+      const now = 0.001 * global.nativePerformanceNow();
+      const dt = typeof lastFrameTime !== "undefined" ? now - lastFrameTime : 0.16666;
 
+      this._player.tick(dt);
       this._renderer.render(GameState.scene, GameState.camera);
 
       this._glContext.endFrameEXP();
+      lastFrameTime = now;
     }
     render();
   }
@@ -86,6 +126,10 @@ export default class GameScreen extends React.Component {
     if (this._terrain) {
       this._terrain.destroy();
       this._terrain = null;
+    }
+    if (this._player) {
+      this._player.destroy();
+      this._player = null;
     }
   }
 }
