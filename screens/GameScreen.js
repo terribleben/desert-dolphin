@@ -4,6 +4,8 @@ import { View } from 'react-native';
 
 import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
+import GameState from '../state/GameState';
+import Terrain from '../entities/Terrain';
 
 export default class GameScreen extends React.Component {
   render() {
@@ -18,10 +20,18 @@ export default class GameScreen extends React.Component {
   _onGLContextCreate = async (glContext) => {
     this._glContext = glContext;
     await this._rebuildAsync();
+
+    // TODO: kill me
+    const geometry = new THREE.PlaneBufferGeometry(GameState.viewport.width, GameState.viewport.height);
+    const bgMaterial = new THREE.MeshBasicMaterial( { color: 0xddac67 } );
+    const bgMesh = new THREE.Mesh(geometry, bgMaterial);
+    GameState.scene.add(bgMesh);
+    this._terrain = new Terrain();
+    
     const render = () => {
       requestAnimationFrame(render);
 
-      this._renderer.render(this._scene, this._camera);
+      this._renderer.render(GameState.scene, GameState.camera);
 
       this._glContext.endFrameEXP();
     }
@@ -29,24 +39,15 @@ export default class GameScreen extends React.Component {
   }
 
   _rebuildAsync = async () => {
+    this._destroy();
+    
     const gl = this._glContext;
-    this._scene = new THREE.Scene();
-    
+    GameState.scene = new THREE.Scene();
     const { camera, viewport } = this._buildCameraAndViewport(gl);
-    this._camera = camera;
-    this._viewport = viewport;
-    
+    GameState.camera = camera;
+    GameState.viewport = viewport;
     this._renderer = ExpoTHREE.createRenderer({ gl });
     this._renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
-
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({
-      map: await ExpoTHREE.createTextureAsync({
-        asset: Expo.Asset.fromModule(require('../assets/icon.png')),
-      }),
-    });
-    const cube = new THREE.Mesh(geometry, material);
-    this._scene.add(cube);
   }
 
   _buildCameraAndViewport = (glContext) => {
@@ -77,6 +78,14 @@ export default class GameScreen extends React.Component {
       screenWidth: (screenWidth > screenHeight) ? screenWidth : screenHeight,
       screenHeight: (screenWidth > screenHeight) ? screenHeight : screenWidth,
     };
-    return { camera, viewport };
+
+    return { camera, viewport };   
+  }
+
+  _destroy = () => {
+    if (this._terrain) {
+      this._terrain.destroy();
+      this._terrain = null;
+    }
   }
 }
