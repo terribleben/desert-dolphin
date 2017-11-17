@@ -1,6 +1,6 @@
 import Expo from 'expo';
 import React from 'react';
-import { View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import {
   PanGestureHandler,
   State,
@@ -9,6 +9,8 @@ import {
 import * as THREE from 'three';
 import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
+import GameHUD from '../components/GameHUD';
+
 import Terrain from '../entities/Terrain';
 import Player from '../entities/Player';
 
@@ -19,10 +21,13 @@ export default class GameScreen extends React.Component {
         id="pan"
         onGestureEvent={this._onPanGestureEvent}
         onHandlerStateChange={this._onPanGestureStateChange}>
-        <Expo.GLView
-          style={{ flex: 1 }}
-          onContextCreate={this._onGLContextCreate}
-          />
+        <View style={{flex: 1}}>
+          <Expo.GLView
+            style={styles.glContainer}
+            onContextCreate={this._onGLContextCreate}
+            />
+          <GameHUD />
+        </View>
       </PanGestureHandler>
     );
   }
@@ -133,3 +138,13 @@ export default class GameScreen extends React.Component {
     }
   }
 }
+
+const styles = StyleSheet.create({
+  glContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+});

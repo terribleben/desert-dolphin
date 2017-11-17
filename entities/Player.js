@@ -3,6 +3,7 @@ import Expo from 'expo';
 import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
 import * as THREE from 'three';
+import Store from '../redux/Store';
 
 export default class Player {
   constructor() {
@@ -33,6 +34,7 @@ export default class Player {
 
   tick = (dt) => {
     if (!this._isReady) { return; }
+    
     if (this._isJumping) {
       this._velocity.y -= 0.1 * dt;
     }
@@ -53,11 +55,12 @@ export default class Player {
       this._reset();
     }
     if (this._mesh.position.y < terrainY) {
-      this._isJumping = false;
-      this._mesh.position.y = terrainY;
-      this._velocity.set(0, 0);
+      // TODO: bounce/coast if angle is acute enough
       if (GameState.terrain.isInPool(this._mesh.position.x)) {
-        console.log('winner');
+        Store.dispatch({ type: 'HIT' });
+        this._reset();
+      } else {
+        Store.dispatch({ type: 'MISS' });
         this._reset();
       }
     }
@@ -85,20 +88,24 @@ export default class Player {
   }
 
   onTouchEnd = (touch) => {
-    if (!this._isJumping) {
+    if (!this._isJumping && !this._hasJumped) {
       this._isJumping = true;
       let pan = new THREE.Vector2(touch.translationX, touch.translationY);
       pan.clampLength(-60, 60);
       pan.multiplyScalar(0.001);
+      this._mesh.position.y = GameState.terrain.getTerrainY(this._mesh.position.x);
       this._velocity.x = -pan.x;
       this._velocity.y = pan.y;
+      this._material.opacity = 1;
     }
   }
 
   _reset = () => {
-    this._isJumping = true;
+    this._hasJumped = false;
+    this._isJumping = false;
     this._velocity = new THREE.Vector2(0, 0);
     this._mesh.position.set(-1.5, 1.0, 10);
     this._isReady = true;
+    this._material.opacity = 0;
   }
 }
