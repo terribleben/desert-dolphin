@@ -29,22 +29,22 @@ export default class GameScreen extends React.Component {
 
   _onPanGestureEvent = event => {
     if (!event.nativeEvent) { return; }
-    if (!this._player) { return; }
+    if (!GameState.player) { return; }
     
-    this._player.onTouchMove(event.nativeEvent);
+    GameState.player.onTouchMove(event.nativeEvent);
   }
   
   _onPanGestureStateChange = event => {
     if (!event.nativeEvent) { return; }
-    if (!this._player) { return; }
+    if (!GameState.player) { return; }
     
     const { state } = event.nativeEvent;
     switch (state) {
     case State.ACTIVE:
-      this._player.onTouchBegin(event.nativeEvent);
+      GameState.player.onTouchBegin(event.nativeEvent);
       break;
     case State.END: case State.CANCELLED:
-      this._player.onTouchEnd(event.nativeEvent);
+      GameState.player.onTouchEnd(event.nativeEvent);
       break;
     default:
       break;
@@ -60,8 +60,8 @@ export default class GameScreen extends React.Component {
     const bgMaterial = new THREE.MeshBasicMaterial( { color: 0xddac67 } );
     const bgMesh = new THREE.Mesh(geometry, bgMaterial);
     GameState.scene.add(bgMesh);
-    this._terrain = new Terrain();
-    this._player = new Player();
+    GameState.terrain = new Terrain();
+    GameState.player = new Player();
 
     let lastFrameTime;
     const render = () => {
@@ -69,7 +69,7 @@ export default class GameScreen extends React.Component {
       const now = 0.001 * global.nativePerformanceNow();
       const dt = typeof lastFrameTime !== "undefined" ? now - lastFrameTime : 0.16666;
 
-      this._player.tick(dt);
+      GameState.player.tick(dt);
       this._renderer.render(GameState.scene, GameState.camera);
 
       this._glContext.endFrameEXP();
@@ -123,13 +123,13 @@ export default class GameScreen extends React.Component {
   }
 
   _destroy = () => {
-    if (this._terrain) {
-      this._terrain.destroy();
-      this._terrain = null;
+    if (GameState.terrain) {
+      GameState.terrain.destroy();
+      GameState.terrain = null;
     }
-    if (this._player) {
-      this._player.destroy();
-      this._player = null;
+    if (GameState.player) {
+      GameState.player.destroy();
+      GameState.player = null;
     }
   }
 }

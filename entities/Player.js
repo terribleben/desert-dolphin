@@ -10,6 +10,13 @@ export default class Player {
     this._mesh = new THREE.Mesh(geometry, this._material);
     scene.add(this._mesh);
 
+    /* for (let ii = -GameState.viewport.width * 0.5; ii < GameState.viewport.width * 0.5; ii += 0.1) {
+      const mesh = new THREE.Mesh(geometry, this._material);
+      mesh.position.x = ii;
+      mesh.position.y = GameState.terrain.getTerrainY(ii);
+      scene.add(mesh);
+    } */
+
     this._reset();
   }
 
@@ -25,8 +32,13 @@ export default class Player {
     this._mesh.position.x += this._velocity.x;
     this._mesh.position.y += this._velocity.y;
 
-    if (this._mesh.position.y < GameState.viewport.height * -0.5) {
-      this._reset();
+    const terrainY = GameState.terrain.getTerrainY(this._mesh.position.x);
+
+    if (this._mesh.position.y < terrainY) {
+      // this._reset();
+      this._isJumping = false;
+      this._mesh.position.y = terrainY;
+      this._velocity.set(0, 0);
     }
   }
   /*
@@ -63,8 +75,8 @@ export default class Player {
   }
 
   _reset = () => {
-    this._isJumping = false;
+    this._isJumping = true;
     this._velocity = new THREE.Vector2(0, 0);
-    this._mesh.position.set(-1.0, 0, 10);
+    this._mesh.position.set(-1.0, 1.0, 10);
   }
 }
