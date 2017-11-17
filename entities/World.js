@@ -47,6 +47,10 @@ export default class World {
     }
   }
 
+  isInteractionAvailable = () => {
+    return (!!this.player && !this._isAdvancing);
+  }
+
   advanceLevel = () => {
     if (!this._isAdvancing) {
       this._nextTerrain = new Terrain(this.terrain);

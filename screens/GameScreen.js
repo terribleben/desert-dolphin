@@ -41,14 +41,14 @@ class GameScreen extends React.Component {
 
   _onPanGestureEvent = event => {
     if (!event.nativeEvent) { return; }
-    if (!GameState.world.player) { return; }
+    if (!GameState.world.isInteractionAvailable()) { return; }
     
     GameState.world.player.onTouchMove(event.nativeEvent);
   }
   
   _onPanGestureStateChange = event => {
     if (!event.nativeEvent) { return; }
-    if (!GameState.world.player) { return; }
+    if (!GameState.world.isInteractionAvailable()) { return; }
     
     const { state } = event.nativeEvent;
     switch (state) {

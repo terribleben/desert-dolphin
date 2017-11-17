@@ -1,4 +1,4 @@
-
+import Arrow from './Arrow';
 import Expo from 'expo';
 import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
@@ -8,13 +8,13 @@ import Store from '../redux/Store';
 export default class Player {
   constructor() {
     this._isReady = false;
+    this._arrow = new Arrow();
     this._buildMeshAsync();
   }
 
   _buildMeshAsync = async () => {
     const scene = GameState.scene;
     const geometry = new THREE.PlaneBufferGeometry(0.15, 0.15);
-    // this._material = new THREE.MeshBasicMaterial({ color: 0xffffff });
     this._material = new THREE.MeshBasicMaterial({
       map: await ExpoTHREE.createTextureAsync({
         asset: Expo.Asset.fromModule(require('../assets/dolphin.png')),
@@ -30,6 +30,10 @@ export default class Player {
   destroy = () => {
     const scene = GameState.scene;
     scene.remove(this._mesh);
+    if (this._arrow) {
+      this._arrow.destroy();
+      this._arrow = null;
+    }
   }
 
   tick = (dt) => {
@@ -65,30 +69,22 @@ export default class Player {
       }
     }
   }
-  /*
-[exp] Object {
-[exp]   "absoluteX": 566.5,
-[exp]   "absoluteY": 246.5,
-[exp]   "handlerTag": 1,
-[exp]   "oldState": 4,
-[exp]   "state": 5,
-[exp]   "target": 3,
-[exp]   "translationX": 552.5,
-[exp]   "translationY": 56.5,
-[exp]   "velocityX": 75.11063079472257,
-[exp]   "velocityY": 89.96844155619195,
-[exp]   "x": 566.5,
-[exp]   "y": 246.5,
-[exp] }
-*/
+
   onTouchBegin = (touch) => {
+    if (!this._isJumping && !this._hasJumped) {
+      this._arrow.onTouchBegin(touch);
+    }
   }
 
   onTouchMove = (touch) => {
+    if (!this._isJumping && !this._hasJumped) {
+      this._arrow.onTouchMove(touch);
+    }
   }
 
   onTouchEnd = (touch) => {
     if (!this._isJumping && !this._hasJumped) {
+      this._arrow.onTouchEnd(touch);
       this._isJumping = true;
       let pan = new THREE.Vector2(touch.translationX, touch.translationY);
       pan.clampLength(-72, 72);
