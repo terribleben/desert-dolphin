@@ -35,10 +35,13 @@ export default class Player {
     const terrainY = GameState.terrain.getTerrainY(this._mesh.position.x);
 
     if (this._mesh.position.y < terrainY) {
-      // this._reset();
       this._isJumping = false;
       this._mesh.position.y = terrainY;
       this._velocity.set(0, 0);
+      if (GameState.terrain.isInPool(this._mesh.position.x)) {
+        console.log('winner');
+        this._reset();
+      }
     }
   }
   /*
