@@ -44,7 +44,7 @@ export default class Terrain {
 
   _scaledPosition = (worldX) => {
     const viewportX = ((worldX + GameState.viewport.width * 0.5) / GameState.viewport.width);
-    const spanIndexFloat = Math.max(0, Math.min(1, viewportX)) * (TERRAIN_NUM_SPANS);
+    const spanIndexFloat = Math.max(0, Math.min(0.999, viewportX)) * (TERRAIN_NUM_SPANS);
     const spanIndex = Math.floor(spanIndexFloat);
     const interp = spanIndexFloat - spanIndex;
     return { spanIndex, interp };
