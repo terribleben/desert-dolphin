@@ -2,6 +2,7 @@
 import GameState from '../state/GameState';
 import Terrain from '../entities/Terrain';
 import * as THREE from 'three';
+import Loser from '../entities/Loser';
 import Player from '../entities/Player';
 
 export default class World {
@@ -9,6 +10,7 @@ export default class World {
     const geometry = new THREE.PlaneBufferGeometry(GameState.viewport.width, GameState.viewport.height);
     const bgMaterial = new THREE.MeshBasicMaterial( { color: 0xddac67 } );
     const bgMesh = new THREE.Mesh(geometry, bgMaterial);
+    bgMesh.position.z = -99;
     GameState.scene.add(bgMesh);
     this.terrain = new Terrain();
     this.player = new Player();
@@ -57,5 +59,10 @@ export default class World {
       this._nextTerrain = new Terrain(this.terrain);
       this._isAdvancing = true;
     }
+  }
+
+  addLoser = (position, rotation) => {
+    const loser = new Loser(position, rotation);
+    this.terrain.addLoser(loser);
   }
 }

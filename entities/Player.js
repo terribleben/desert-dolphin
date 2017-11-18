@@ -64,7 +64,7 @@ export default class Player {
         Store.dispatch({ type: 'HIT' });
         this._reset();
       } else {
-        Store.dispatch({ type: 'MISS' });
+        Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
         this._reset();
       }
     }
@@ -100,7 +100,7 @@ export default class Player {
     this._hasJumped = false;
     this._isJumping = false;
     this._velocity = new THREE.Vector2(0, 0);
-    this._mesh.position.set(-1.5, 1.0, 10);
+    this._mesh.position.set(-1.5, 1.0, 0.5);
     this._isReady = true;
     this._material.opacity = 0;
   }

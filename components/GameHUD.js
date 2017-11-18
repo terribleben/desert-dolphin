@@ -12,7 +12,9 @@ const styles = StyleSheet.create({
   score: {
     backgroundColor: 'transparent',
     padding: 4,
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
 });
 

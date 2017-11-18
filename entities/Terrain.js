@@ -15,6 +15,7 @@ export default class Terrain {
 
     this._groundMaterial = new THREE.MeshBasicMaterial({ color: 0xe28631 });
     this._groundMesh = new THREE.Mesh(this._makeShapeGeometry(this._spans), this._groundMaterial);
+    this._groundMesh.position.z = 1;
     scene.add(this._groundMesh);
 
     const poolX = GameState.viewport.width * -0.5 + (GameState.viewport.width / TERRAIN_NUM_SPANS) * (this._poolIndex + 0.5);
@@ -27,12 +28,24 @@ export default class Terrain {
     }
   }
 
+  addLoser = (loser) => {
+    if (!this._losers) {
+      this._losers = [];
+    }
+    this._losers.push(loser);
+  }
+
   updateXPosition = (x) => {
     if (x) {
       this._pool.updateXPosition(x);
       this._groundMesh.position.x += x;
       if (this._previousPool) {
         this._previousPool.updateXPosition(x);
+      }
+      if (this._losers) {
+        this._losers.forEach(loser => {
+          loser.updateXPosition(x);
+        });
       }
     }
   }
@@ -43,6 +56,10 @@ export default class Terrain {
     if (this._previousPool) {
       this._previousPool.destroy();
       this._previousPool = null;
+    }
+    if (this._losers) {
+      this._losers.forEach(loser => { loser.destroy(); });
+      this._losers = null;
     }
   }
 
@@ -115,9 +132,9 @@ export default class Terrain {
           prevY - POOL_TERRAIN_DEPTH,
           prevY - 0.05 + Math.random() * 0.1 - POOL_TERRAIN_DEPTH,
         ];
-        prevY = span[1] + POOL_TERRAIN_DEPTH;
+        prevY = span[1] + POOL_TERRAIN_DEPTH + 0.05;
       } else {
-        const isDiscontinuous = (Math.random() < 0.2);
+        const isDiscontinuous = (Math.random() < 0.2 && (ii - 1 !== this._poolIndex));
         if (isDiscontinuous) {
           prevY = -0.1 + Math.random() * 0.2;
         }

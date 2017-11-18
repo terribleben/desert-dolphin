@@ -32,9 +32,12 @@ class GameScreen extends React.Component {
   }
 
   componentWillReceiveProps(nextProps) {
-    if (nextProps.hit && nextProps.hit > 0 && nextProps.hit !== this.props.hit) {
-      if (GameState.world) {
+    if (GameState.world) {
+      if (nextProps.hit && nextProps.hit > 0 && nextProps.hit !== this.props.hit) {
         GameState.world.advanceLevel();
+      }
+      if (nextProps.miss && nextProps.miss > 0 && nextProps.miss !== this.props.miss) {
+        GameState.world.addLoser(nextProps.missPosition, nextProps.missRotation);
       }
     }
   }
@@ -144,4 +147,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect((state) => ({ hit: state.hit }))(GameScreen);
+export default connect((state) => ({ hit: state.hit, miss: state.miss, missPosition: state.missPosition, missRotation: state.missRotation }))(GameScreen);

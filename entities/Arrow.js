@@ -22,6 +22,7 @@ export default class Arrow {
     const viewportCoords = this._toViewportCoords({ x, y });
     this._mesh.position.x = viewportCoords.x;
     this._mesh.position.y = viewportCoords.y;
+    this._mesh.position.z = 99;
   }
 
   onTouchMove = (touch) => {

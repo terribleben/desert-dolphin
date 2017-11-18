@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "desert-dolphin",
-    "description": "An empty new project",
+    "name": "Desert Dolphin",
+    "description": "Help the dolphin reach the ocean. https://github.com/terribleben/desert-dolphin",
     "slug": "desert-dolphin",
     "privacy": "public",
     "sdkVersion": "23.0.0",
     "version": "1.0.0",
     "orientation": "landscape",
-    "primaryColor": "#cccccc",
+    "primaryColor": "#ddac67",
     "icon": "./assets/icon.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ddac67"
     },
     "ios": {
       "supportsTablet": true

@@ -4,6 +4,8 @@ const initialState = {
   strokes: 0,
   miss: 0,
   hit: 0,
+  missPosition: null,
+  missRotation: null,
 };
 
 const reduce = (state, action) => {
@@ -13,6 +15,8 @@ const reduce = (state, action) => {
       ...state,
       strokes: state.strokes + 1,
       miss: state.miss + 1,
+      missPosition: action.position,
+      missRotation: action.rotation,
     };
   case 'HIT':
     return {

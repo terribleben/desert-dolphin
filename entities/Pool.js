@@ -11,7 +11,7 @@ export default class Pool {
     scene.add(this._poolMesh);
     this._poolMesh.position.x = initialX;
     this._poolMesh.position.y = this._terrain.getTerrainY(initialX) - 0.02;
-    this._poolMesh.position.z = 11;
+    this._poolMesh.position.z = 1.1;
   }
 
   updateXPosition = (x) => {
