@@ -40,6 +40,7 @@ export default class World {
       if (this._nextTerrain._groundMesh.position.x <= 0) {
         this._nextTerrain._groundMesh.position.x = 0;
         this._isAdvancing = false;
+        this._nextTerrain._previousPool = this.terrain._pool;
         this.terrain.destroy();
         this.terrain = this._nextTerrain;
         this._nextTerrain = null;

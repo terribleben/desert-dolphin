@@ -1,6 +1,7 @@
 
 import * as THREE from 'three';
 import GameState from '../state/GameState';
+import Pool from './Pool';
 
 const TERRAIN_NUM_SPANS = 12;
 const TERRAIN_NEUTRAL_Y = 0.0;
@@ -9,19 +10,15 @@ const POOL_TERRAIN_DEPTH = 0.1;
 export default class Terrain {
   constructor(previousTerrain) {
     const scene = GameState.scene;
-    this._poolIndex = 8 + Math.ceil(Math.random() * 2);
+    this._poolIndex = 5 + Math.ceil(Math.random() * 5);
     this._spans = this._generateTerrain(0, previousTerrain);
 
     this._groundMaterial = new THREE.MeshBasicMaterial({ color: 0xe28631 });
     this._groundMesh = new THREE.Mesh(this._makeShapeGeometry(this._spans), this._groundMaterial);
     scene.add(this._groundMesh);
 
-    this._poolMaterial = new THREE.MeshBasicMaterial({ color: 0x00aabb });
-    this._poolMesh = new THREE.Mesh(this._makePoolGeometry(this._spans, this._poolIndex), this._poolMaterial);
-    this._poolMesh.position.x = GameState.viewport.width * -0.5 + (GameState.viewport.width / TERRAIN_NUM_SPANS) * (this._poolIndex + 0.5);
-    this._poolMesh.position.y = this.getTerrainY(this._poolMesh.position.x);
-    this._poolMesh.position.z = 11;
-    scene.add(this._poolMesh);
+    const poolX = GameState.viewport.width * -0.5 + (GameState.viewport.width / TERRAIN_NUM_SPANS) * (this._poolIndex + 0.5);
+    this._pool = new Pool(this, poolX);
 
     if (previousTerrain) {
       const indexIntoPreviousTerrain = previousTerrain._poolIndex - 1;
@@ -32,15 +29,21 @@ export default class Terrain {
 
   updateXPosition = (x) => {
     if (x) {
-      this._poolMesh.position.x += x;
+      this._pool.updateXPosition(x);
       this._groundMesh.position.x += x;
+      if (this._previousPool) {
+        this._previousPool.updateXPosition(x);
+      }
     }
   }
 
   destroy = () => {
     const scene = GameState.scene;
     scene.remove(this._groundMesh);
-    scene.remove(this._poolMesh);
+    if (this._previousPool) {
+      this._previousPool.destroy();
+      this._previousPool = null;
+    }
   }
 
   isInPool = (x) => {
@@ -61,10 +64,6 @@ export default class Terrain {
     const spanIndex = Math.floor(spanIndexFloat);
     const interp = spanIndexFloat - spanIndex;
     return { spanIndex, interp };
-  }
-
-  _makePoolGeometry = (spans, poolIndex) => {
-    return new THREE.PlaneBufferGeometry(GameState.viewport.width / TERRAIN_NUM_SPANS, 0.2);
   }
 
   _makeShapeGeometry = (spans) => {
