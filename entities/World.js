@@ -4,6 +4,8 @@ import Terrain from '../entities/Terrain';
 import * as THREE from 'three';
 import Loser from '../entities/Loser';
 import Player from '../entities/Player';
+import Store from '../redux/Store';
+import TextureManager from '../assets/TextureManager';
 
 export default class World {
   constructor() {
@@ -12,11 +14,20 @@ export default class World {
     const bgMesh = new THREE.Mesh(geometry, bgMaterial);
     bgMesh.position.z = -99;
     GameState.scene.add(bgMesh);
-    this.terrain = new Terrain();
-    this.player = new Player();
 
     this._isAdvancing = false;
     this._nextTerrain = null;
+  }
+
+  loadAsync = async () => {
+    await TextureManager.loadAsync();
+    this.terrain = new Terrain();
+    this.player = new Player();
+    return Store.dispatch({ type: 'READY' });
+  }
+
+  onGameReady = () => {
+    this.player.onGameReady();
   }
 
   destroy = () => {
@@ -46,6 +57,7 @@ export default class World {
         this.terrain.destroy();
         this.terrain = this._nextTerrain;
         this._nextTerrain = null;
+        Store.dispatch({ type: 'READY' });
       }
     }
   }

@@ -3,12 +3,22 @@ import Expo from 'expo';
 import ExpoTHREE from 'expo-three';
 import { PixelRatio } from 'react-native';
 import GameState from '../state/GameState';
+import TextureManager from '../assets/TextureManager';
 
 const SCREEN_SCALE = PixelRatio.get();
 
 export default class Arrow {
   constructor() {
-    this._buildMeshAsync();
+    const scene = GameState.scene;
+    const geometry = new THREE.PlaneBufferGeometry(0.1, 0.02);
+    this._material = new THREE.MeshBasicMaterial({
+      map: TextureManager.get(TextureManager.GUIDE),
+      transparent: true,
+      side: THREE.DoubleSide,
+    });
+    this._material.opacity = 0;
+    this._mesh = new THREE.Mesh(geometry, this._material);
+    scene.add(this._mesh);
   }
 
   destroy = () => {
@@ -34,21 +44,6 @@ export default class Arrow {
 
   onTouchEnd = (touch) => {
     this._material.opacity = 0;
-  }
-
-  _buildMeshAsync = async () => {
-    const scene = GameState.scene;
-    const geometry = new THREE.PlaneBufferGeometry(0.1, 0.02);
-    this._material = new THREE.MeshBasicMaterial({
-      map: await ExpoTHREE.createTextureAsync({
-        asset: Expo.Asset.fromModule(require('../assets/guide.png')),
-      }),
-      transparent: true,
-      side: THREE.DoubleSide,
-    });
-    this._material.opacity = 0;
-    this._mesh = new THREE.Mesh(geometry, this._material);
-    scene.add(this._mesh);
   }
 
   _toViewportCoords = (screenCoords) => {

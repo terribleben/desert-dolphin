@@ -1,6 +1,7 @@
 import { createStore } from 'redux';
 
 const initialState = {
+  isReady: false,
   strokes: 0,
   miss: 0,
   hit: 0,
@@ -13,6 +14,7 @@ const reduce = (state, action) => {
   case 'MISS':
     return {
       ...state,
+      isReady: false,
       strokes: state.strokes + 1,
       miss: state.miss + 1,
       missPosition: action.position,
@@ -21,8 +23,14 @@ const reduce = (state, action) => {
   case 'HIT':
     return {
       ...state,
+      isReady: false,
       strokes: state.strokes + 1,
       hit: state.hit + 1,
+    };
+  case 'READY':
+    return {
+      ...state,
+      isReady: true,
     };
   default:
     return state;

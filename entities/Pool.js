@@ -14,6 +14,10 @@ export default class Pool {
     this._poolMesh.position.z = 1.1;
   }
 
+  getCenterX = () => {
+    return this._poolMesh.position.x;
+  }
+
   updateXPosition = (x) => {
     this._poolMesh.position.x += x;
   }

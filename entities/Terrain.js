@@ -75,6 +75,20 @@ export default class Terrain {
       (this._spans[spanIndex][1] * (interp));
   }
 
+  getStartPosition = () => {
+    let xStart;
+    if (this._previousPool) {
+      xStart = this._previousPool.getCenterX();
+    } else {
+      xStart = GameState.viewport.width * -0.4;
+    }
+    
+    return new THREE.Vector2(
+      xStart,
+      this.getTerrainY(xStart) + 0.2
+    );
+  }
+
   _scaledPosition = (worldX) => {
     const viewportX = ((worldX + GameState.viewport.width * 0.5) / GameState.viewport.width);
     const spanIndexFloat = Math.max(0, Math.min(0.999, viewportX)) * (TERRAIN_NUM_SPANS);

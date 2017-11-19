@@ -1,14 +1,15 @@
 import Arrow from './Arrow';
-import Expo from 'expo';
-import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
 import * as THREE from 'three';
+import Scope from './Scope';
 import Store from '../redux/Store';
+import TextureManager from '../assets/TextureManager';
 
 export default class Player {
   constructor() {
     this._isReady = false;
     this._arrow = new Arrow();
+    this._scope = new Scope();
     this._buildMeshAsync();
   }
 
@@ -16,9 +17,7 @@ export default class Player {
     const scene = GameState.scene;
     const geometry = new THREE.PlaneBufferGeometry(0.15, 0.15);
     this._material = new THREE.MeshBasicMaterial({
-      map: await ExpoTHREE.createTextureAsync({
-        asset: Expo.Asset.fromModule(require('../assets/dolphin.png')),
-      }),
+      map: TextureManager.get(TextureManager.DOLPHIN),
       transparent: true,
       side: THREE.DoubleSide,
     });
@@ -34,24 +33,29 @@ export default class Player {
       this._arrow.destroy();
       this._arrow = null;
     }
+    if (this._scope) {
+      this._scope.destroy();
+      this._scope = null;
+    }
   }
 
   tick = (dt) => {
     if (!this._isReady) { return; }
+
+    this._scope.tick(dt);
     
     if (this._isJumping) {
       this._velocity.y -= 0.1 * dt;
+      if (this._velocity.x >= 0) {
+        this._mesh.scale.x = 1;
+        this._mesh.rotation.z = this._velocity.angle();
+      } else {
+        this._mesh.scale.x = -1;
+        this._mesh.rotation.z = this._velocity.angle() + 3.142;
+      }
     }
     this._mesh.position.x += this._velocity.x;
     this._mesh.position.y += this._velocity.y;
-
-    if (this._velocity.x >= 0) {
-      this._mesh.scale.x = 1;
-      this._mesh.rotation.z = this._velocity.angle();
-    } else {
-      this._mesh.scale.x = -1;
-      this._mesh.rotation.z = this._velocity.angle() + 3.142;
-    }
 
     const terrainY = GameState.world.terrain.getTerrainY(this._mesh.position.x);
 
@@ -70,38 +74,57 @@ export default class Player {
     }
   }
 
+  _isInteractionAvailable = () => {
+    return (!this._isJumping && !this._hasJumped && this._isGameReady);
+  }
+
   onTouchBegin = (touch) => {
-    if (!this._isJumping && !this._hasJumped) {
+    if (this._isInteractionAvailable()) {
       this._arrow.onTouchBegin(touch);
     }
   }
 
   onTouchMove = (touch) => {
-    if (!this._isJumping && !this._hasJumped) {
+    if (this._isInteractionAvailable()) {
       this._arrow.onTouchMove(touch);
+      this._mesh.rotation.z = this._arrow._mesh.rotation.z + 3.141;
     }
   }
 
   onTouchEnd = (touch) => {
-    if (!this._isJumping && !this._hasJumped) {
+    if (this._isInteractionAvailable()) {
       this._arrow.onTouchEnd(touch);
       this._isJumping = true;
       let pan = new THREE.Vector2(touch.translationX, touch.translationY);
       pan.clampLength(-72, 72);
       pan.multiplyScalar(0.001);
-      this._mesh.position.y = GameState.world.terrain.getTerrainY(this._mesh.position.x);
       this._velocity.x = -pan.x;
       this._velocity.y = pan.y;
-      this._material.opacity = 1;
+      this._scope.setIsVisible(false);
     }
+  }
+
+  onGameReady = () => {
+    this._isGameReady = true;
+    this._material.opacity = 1;
+    this._mesh.rotation.z = 0;
+    if (GameState.world.terrain) {
+      const startPosition2D = GameState.world.terrain.getStartPosition();
+      this._mesh.position.x = startPosition2D.x;
+      this._mesh.position.y = startPosition2D.y;
+    }
+    this._scope.setPosition(this._mesh.position);
+    this._scope.setIsVisible(true);
   }
 
   _reset = () => {
     this._hasJumped = false;
     this._isJumping = false;
     this._velocity = new THREE.Vector2(0, 0);
-    this._mesh.position.set(-1.5, 1.0, 0.5);
-    this._isReady = true;
+    this._scope.setIsVisible(false);
+    this._mesh.position.set(-1.5, 2.0, 0.5);
     this._material.opacity = 0;
+    this._isReady = true;
+    this._isGameReady = false;
   }
 }

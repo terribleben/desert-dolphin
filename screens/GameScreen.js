@@ -38,6 +38,12 @@ class GameScreen extends React.Component {
       }
       if (nextProps.miss && nextProps.miss > 0 && nextProps.miss !== this.props.miss) {
         GameState.world.addLoser(nextProps.missPosition, nextProps.missRotation);
+        setTimeout(() => {
+          this.props.dispatch({ type: 'READY' });
+        }, 1000);
+      }
+      if (nextProps.isReady && !this.props.isReady) {
+        GameState.world.onGameReady();
       }
     }
   }
@@ -69,7 +75,6 @@ class GameScreen extends React.Component {
   _onGLContextCreate = async (glContext) => {
     this._glContext = glContext;
     await this._rebuildAsync();
-    GameState.world = new World();
     
     let lastFrameTime;
     const render = () => {
@@ -96,6 +101,10 @@ class GameScreen extends React.Component {
     GameState.viewport = viewport;
     this._renderer = ExpoTHREE.createRenderer({ gl });
     this._renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
+
+    GameState.world = new World();
+    await GameState.world.loadAsync();
+    return;
   }
 
   _buildCameraAndViewport = (glContext) => {
@@ -147,4 +156,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default connect((state) => ({ hit: state.hit, miss: state.miss, missPosition: state.missPosition, missRotation: state.missRotation }))(GameScreen);
+export default connect((state) => (state))(GameScreen);
