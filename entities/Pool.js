@@ -29,6 +29,24 @@ export default class Pool {
   }
 
   _makePoolGeometry = (spans, poolIndex) => {
-    return new THREE.PlaneBufferGeometry((GameState.viewport.width / 12) + 0.02, 0.15);
+    let shape = new THREE.Shape();
+    // moveTo, lineTo
+    const poolWidth = (GameState.viewport.width / 12) + 0.02,
+          poolHeight = 0.15;
+    // upper left
+    shape.moveTo(-poolWidth * 0.5, poolHeight * 0.5);
+
+    // bottom is random
+    const numBottomSegments = 3 + Math.floor(Math.random() * 3);
+    const randomHeight = () => poolHeight * (0.4 + Math.random() * 0.6);
+    for (let ii = 0; ii < numBottomSegments; ii++) {
+      const x = (-poolWidth * 0.5) + ii * (poolWidth / (numBottomSegments - 1.0));
+      shape.lineTo(x, -randomHeight());
+    }
+    
+    // upper right
+    shape.lineTo(poolWidth * 0.5, poolHeight * 0.5);
+    return new THREE.ShapeGeometry(shape);
+    // return new THREE.PlaneBufferGeometry(, );
   }
 }
