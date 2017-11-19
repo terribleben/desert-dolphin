@@ -1,8 +1,6 @@
-
-import Expo from 'expo';
-import ExpoTHREE from 'expo-three';
 import GameState from '../state/GameState';
 import * as THREE from 'three';
+import TextureManager from '../assets/TextureManager';
 
 export default class Loser {
   constructor(position, rotation) {
@@ -17,11 +15,8 @@ export default class Loser {
     const scene = GameState.scene;
     const geometry = new THREE.PlaneBufferGeometry(0.15, 0.15);
     this._material = new THREE.MeshBasicMaterial({
-      map: await ExpoTHREE.createTextureAsync({
-        asset: Expo.Asset.fromModule(require('../assets/dolphin.png')),
-      }),
+      map: TextureManager.get(TextureManager.DOLPHIN),
       transparent: true,
-      side: THREE.DoubleSide,
     });
     this._mesh = new THREE.Mesh(geometry, this._material);
     scene.add(this._mesh);
