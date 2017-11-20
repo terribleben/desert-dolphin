@@ -84,7 +84,6 @@ export default class Player {
         Store.dispatch({ type: 'HIT' });
         this._reset();
       } else {
-        // maybe bounce
         const prevVelocity = this._velocity.clone();
         const terrainAngle = GameState.world.terrain.getAngle(this._mesh.position.x);
         const diffVelocityTerrainAngle = diffAngle(
@@ -98,18 +97,17 @@ export default class Player {
           normalMag * Math.sin(normalAngle)
         ));
         const isImpactDeadly = (
-          this._velocity.length() < 0.008
+          this._velocity.length() < 0.007
             || (prevVelocity.length() / this._velocity.length() > 1.5)
             || (Math.abs(diffAngle(this._velocity.angle(), prevVelocity.angle())) > Math.PI * 0.4)
         );
         if (isImpactDeadly) {
-          // this._updateRotation();
           Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
           this._reset();
         } else {
           // friction
           const frictionAngle = terrainAngle - Math.PI,
-                frictionMag = this._velocity.length() * 0.2;
+                frictionMag = this._velocity.length() * 0.18;
           this._velocity.add(new THREE.Vector2(
             frictionMag * Math.cos(frictionAngle),
             frictionMag * Math.sin(frictionAngle)

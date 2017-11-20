@@ -64,8 +64,13 @@ export default class Terrain {
   }
 
   isInPool = (x) => {
-    const { spanIndex } = this._scaledPosition(x);
-    return (spanIndex == this._poolIndex);
+    const delta = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.15;
+    const { spanIndex } = this._scaledPosition(x - delta);
+    if (spanIndex == this._poolIndex) {
+      return true;
+    }
+    const { otherSpanIndex } = this._scaledPosition(x + delta);
+    return (otherSpanIndex == this._poolIndex);
   }
 
   getTerrainY = (x) => {
