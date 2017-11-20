@@ -1,11 +1,13 @@
 import Arrow from './Arrow';
 import GameState from '../state/GameState';
 import * as THREE from 'three';
+import { PixelRatio } from 'react-native';
 import Scope from './Scope';
 import Store from '../redux/Store';
 import TextureManager from '../assets/TextureManager';
 
 const TWOPI = Math.PI * 2.0;
+const SCREEN_SCALE = PixelRatio.get();
 
 function diffAngle(a, b) {
   while (a > TWOPI)  a -= TWOPI;
@@ -66,14 +68,7 @@ export default class Player {
     this._scope.tick(dt);
     
     if (this._isJumping) {
-      this._velocity.y -= 0.1 * dt;
-      if (this._velocity.x >= 0) {
-        this._mesh.scale.x = 1;
-        this._mesh.rotation.z = this._velocity.angle();
-      } else {
-        this._mesh.scale.x = -1;
-        this._mesh.rotation.z = this._velocity.angle() + 3.142;
-      }
+      this._velocity.y -= 0.08 * dt;
     }
     this._mesh.position.x += this._velocity.x;
     this._mesh.position.y += this._velocity.y;
@@ -90,19 +85,52 @@ export default class Player {
         this._reset();
       } else {
         // maybe bounce
+        const prevVelocity = this._velocity.clone();
+        const terrainAngle = GameState.world.terrain.getAngle(this._mesh.position.x);
         const diffVelocityTerrainAngle = diffAngle(
           this._velocity.angle(),
-          GameState.world.terrain.getAngle(this._mesh.position.x)
+          terrainAngle
         );
-        if (Math.abs(diffVelocityTerrainAngle) < Math.PI * 0.2) {
-          // TODO: do a better job bouncing
-          this._mesh.position.y = terrainY;
-          this._velocity.y *= -0.85;
-          this._velocity.x *= 0.85;
-        } else {
+        const normalAngle = terrainAngle + Math.PI * -0.5;
+        const normalMag = this._velocity.length() * Math.sin(diffVelocityTerrainAngle);
+        this._velocity.add(new THREE.Vector2(
+          normalMag * Math.cos(normalAngle),
+          normalMag * Math.sin(normalAngle)
+        ));
+        const isImpactDeadly = (
+          this._velocity.length() < 0.008
+            || (prevVelocity.length() / this._velocity.length() > 1.5)
+            || (Math.abs(diffAngle(this._velocity.angle(), prevVelocity.angle())) > Math.PI * 0.4)
+        );
+        if (isImpactDeadly) {
+          // this._updateRotation();
           Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
           this._reset();
+        } else {
+          // friction
+          const frictionAngle = terrainAngle - Math.PI,
+                frictionMag = this._velocity.length() * 0.2;
+          this._velocity.add(new THREE.Vector2(
+            frictionMag * Math.cos(frictionAngle),
+            frictionMag * Math.sin(frictionAngle)
+          ));
+          this._mesh.position.y = terrainY;
+          this._updateRotation();
         }
+      }
+    } else {
+      this._updateRotation();
+    }
+  }
+
+  _updateRotation = () => {
+    if (this._isJumping) {
+      if (this._velocity.x >= 0) {
+        this._mesh.scale.x = 1;
+        this._mesh.rotation.z = this._velocity.angle();
+      } else {
+        this._mesh.scale.x = -1;
+        this._mesh.rotation.z = this._velocity.angle() + 3.142;
       }
     }
   }
@@ -114,23 +142,26 @@ export default class Player {
   onTouchBegin = (touch) => {
     if (this._isInteractionAvailable()) {
       this._arrow.onTouchBegin(touch);
+      this._hasTouch = true;
     }
   }
 
   onTouchMove = (touch) => {
-    if (this._isInteractionAvailable()) {
+    if (this._isInteractionAvailable() && this._hasTouch) {
       this._arrow.onTouchMove(touch);
       this._mesh.rotation.z = this._arrow._mesh.rotation.z + 3.141;
     }
   }
 
   onTouchEnd = (touch) => {
-    if (this._isInteractionAvailable()) {
+    if (this._isInteractionAvailable() && this._hasTouch) {
       this._arrow.onTouchEnd(touch);
       this._isJumping = true;
-      let pan = new THREE.Vector2(touch.translationX, touch.translationY);
-      pan.clampLength(-72, 72);
-      pan.multiplyScalar(0.001);
+      this._hasTouch = false;
+      let pan = new THREE.Vector2(touch.translationX * SCREEN_SCALE, touch.translationY * SCREEN_SCALE);
+      const maxPanLength = GameState.viewport.screenHeight * 0.4;
+      pan.clampLength(-maxPanLength, maxPanLength);
+      pan.multiplyScalar(0.0005 / SCREEN_SCALE);
       this._velocity.x = -pan.x;
       this._velocity.y = pan.y;
       this._scope.setIsVisible(false);
@@ -157,6 +188,7 @@ export default class Player {
     this._scope.setIsVisible(false);
     this._mesh.position.set(-1.5, 2.0, 0.5);
     this._material.opacity = 0;
+    this._hasTouch = false;
     this._isReady = true;
     this._isGameReady = false;
   }

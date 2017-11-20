@@ -77,13 +77,31 @@ export default class Terrain {
 
   getAngle = (x) => {
     const quarterSpan = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.25;
-    const yLeft = this.getTerrainY(x - quarterSpan),
-          yRight = this.getTerrainY(x + quarterSpan);
-    const segment = new THREE.Vector2(
-      (x + quarterSpan) - (x - quarterSpan),
-      yRight - yLeft
-    );
-    return segment.angle();
+
+    const idxLeft = this._scaledPosition(x - quarterSpan).spanIndex,
+          idxRight = this._scaledPosition(x + quarterSpan).spanIndex;
+    
+    if (idxLeft != idxRight && this._spans[idxLeft][1] != this._spans[idxRight][0]) {
+      // discontinuity / cliff
+      // so just return the angle of the segment immediately below
+      const idxCenter = this._scaledPosition(x).spanIndex;
+      const segment = new THREE.Vector2(
+        quarterSpan * 4.0, // width of span
+        this._spans[idxCenter][1] - this._spans[idxCenter][0]
+      );
+      return segment.angle();
+    } else {
+      // continuous,
+      // so interp across segments to either side
+      const yLeft = this.getTerrainY(x - quarterSpan),
+            yRight = this.getTerrainY(x + quarterSpan);
+    
+      const segment = new THREE.Vector2(
+        (x + quarterSpan) - (x - quarterSpan),
+        yRight - yLeft
+      );
+      return segment.angle();
+    }
   }
 
   getStartPosition = () => {
