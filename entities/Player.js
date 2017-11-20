@@ -92,10 +92,14 @@ export default class Player {
         );
         const normalAngle = terrainAngle + Math.PI * -0.5;
         const normalMag = this._velocity.length() * Math.sin(diffVelocityTerrainAngle);
-        this._velocity.add(new THREE.Vector2(
+        const normal = new THREE.Vector2(
           normalMag * Math.cos(normalAngle),
           normalMag * Math.sin(normalAngle)
-        ));
+        );
+        this._velocity.add(normal);
+        if (Math.abs(normalMag) > 0.02) {
+          GameState.world.particleManager.dustBurst(this._mesh.position, normal, 7);
+        }
         const isImpactDeadly = (
           this._velocity.length() < 0.007
             || (prevVelocity.length() / this._velocity.length() > 1.5)
@@ -114,6 +118,7 @@ export default class Player {
           ));
           this._mesh.position.y = terrainY;
           this._updateRotation();
+          GameState.world.particleManager.dustBurst(this._mesh.position, this._velocity, 2);
         }
       }
     } else {

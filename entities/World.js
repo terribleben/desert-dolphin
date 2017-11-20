@@ -3,6 +3,7 @@ import GameState from '../state/GameState';
 import Terrain from '../entities/Terrain';
 import * as THREE from 'three';
 import Loser from '../entities/Loser';
+import ParticleManager from './ParticleManager';
 import Player from '../entities/Player';
 import Store from '../redux/Store';
 import TextureManager from '../assets/TextureManager';
@@ -23,6 +24,7 @@ export default class World {
     await TextureManager.loadAsync();
     this.terrain = new Terrain();
     this.player = new Player();
+    this.particleManager = new ParticleManager();
     return Store.dispatch({ type: 'READY' });
   }
 
@@ -43,10 +45,15 @@ export default class World {
       this.player.destroy();
       this.player = null;
     }
+    if (this.particleManager) {
+      this.particleManager.destroy();
+      this.particleManager = null;
+    }
   }
 
   tick = (dt) => {
     this.player.tick(dt);
+    this.particleManager.tick(dt);
     if (this._isAdvancing) {
       this.terrain.updateXPosition(-0.04);
       this._nextTerrain.updateXPosition(-0.04);

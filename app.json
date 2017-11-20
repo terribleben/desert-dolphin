@@ -5,7 +5,7 @@
     "slug": "desert-dolphin",
     "privacy": "public",
     "sdkVersion": "23.0.0",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "landscape",
     "primaryColor": "#ddac67",
     "icon": "./assets/icon.png",
