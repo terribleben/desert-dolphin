@@ -75,6 +75,17 @@ export default class Terrain {
       (this._spans[spanIndex][1] * (interp));
   }
 
+  getAngle = (x) => {
+    const quarterSpan = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.25;
+    const yLeft = this.getTerrainY(x - quarterSpan),
+          yRight = this.getTerrainY(x + quarterSpan);
+    const segment = new THREE.Vector2(
+      (x + quarterSpan) - (x - quarterSpan),
+      yRight - yLeft
+    );
+    return segment.angle();
+  }
+
   getStartPosition = () => {
     let xStart;
     if (this._previousPool) {

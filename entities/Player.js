@@ -5,6 +5,27 @@ import Scope from './Scope';
 import Store from '../redux/Store';
 import TextureManager from '../assets/TextureManager';
 
+const TWOPI = Math.PI * 2.0;
+
+function diffAngle(a, b) {
+  while (a > TWOPI)  a -= TWOPI;
+  while (b > TWOPI)  b -= TWOPI;
+  while (a < 0)  a += TWOPI;
+  while (b < 0) b += TWOPI;
+
+  let diff = a - b;
+  if (Math.abs(diff) <= Math.PI) {
+    return diff;
+  }
+
+  while (a > Math.PI)  a -= TWOPI;
+  while (b > Math.PI)  b -= TWOPI;
+  while (a < -Math.PI)  a += TWOPI;
+  while (b < -Math.PI)  b += TWOPI;
+
+  return a - b;
+}
+
 export default class Player {
   constructor() {
     this._isReady = false;
@@ -60,16 +81,28 @@ export default class Player {
     const terrainY = GameState.world.terrain.getTerrainY(this._mesh.position.x);
 
     if (this._mesh.position.x > GameState.viewport.width * 0.5 || this._mesh.position.x < GameState.viewport.width * -0.5) {
+      Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
       this._reset();
     }
     if (this._mesh.position.y < terrainY) {
-      // TODO: bounce/coast if angle is acute enough
       if (GameState.world.terrain.isInPool(this._mesh.position.x)) {
         Store.dispatch({ type: 'HIT' });
         this._reset();
       } else {
-        Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
-        this._reset();
+        // maybe bounce
+        const diffVelocityTerrainAngle = diffAngle(
+          this._velocity.angle(),
+          GameState.world.terrain.getAngle(this._mesh.position.x)
+        );
+        if (Math.abs(diffVelocityTerrainAngle) < Math.PI * 0.2) {
+          // TODO: do a better job bouncing
+          this._mesh.position.y = terrainY;
+          this._velocity.y *= -0.85;
+          this._velocity.x *= 0.85;
+        } else {
+          Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
+          this._reset();
+        }
       }
     }
   }
