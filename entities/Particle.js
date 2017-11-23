@@ -7,7 +7,7 @@ export default class Particle {
     params = this._defaults(params);
     const scene = GameState.scene;
     const geometry = new THREE.PlaneBufferGeometry(params.size, params.size);
-    this._mesh = new THREE.Mesh(geometry, TextureManager.getMaterial(TextureManager.PARTICLE));
+    this._mesh = new THREE.Mesh(geometry, TextureManager.getMaterial(params.materialKey));
     scene.add(this._mesh);
     
     this._mesh.position.x = params.position.x;
@@ -20,6 +20,7 @@ export default class Particle {
     this._lifespan = params.lifespan;
     this._ttl = this._lifespan;
     this._velocity = params.velocity;
+    this._gravity = params.gravity;
     this._isAlive = true;
   }
 
@@ -31,7 +32,9 @@ export default class Particle {
       rotation: 0,
       position: new THREE.Vector2(0, 0),
       velocity: new THREE.Vector2(0, 0),
+      gravity: 0.03,
       lifespan: 1.0,
+      materialKey: TextureManager.PARTICLE_DUST,
     };
     for (const key in defaults) {
       if (defaults.hasOwnProperty(key)) {
@@ -60,7 +63,7 @@ export default class Particle {
       this._isAlive = 0;
     }
 
-    this._velocity.y -= 0.03 * dt;
+    this._velocity.y -= this._gravity * dt;
     const velDt = this._velocity.clone();
     velDt.multiplyScalar(dt);
     this._mesh.position.x += this._velocity.x;

@@ -55,18 +55,22 @@ export default class World {
     this.player.tick(dt);
     this.particleManager.tick(dt);
     if (this._isAdvancing) {
-      this.terrain.updateXPosition(-0.04);
-      this._nextTerrain.updateXPosition(-0.04);
-      if (this._nextTerrain._groundMesh.position.x <= 0) {
-        this._nextTerrain._previousPool = this.terrain._pool;
-        this._nextTerrain.updateXPosition(
-          -this._nextTerrain._groundMesh.position.x
-        );
-        this._isAdvancing = false;
-        this.terrain.destroy();
-        this.terrain = this._nextTerrain;
-        this._nextTerrain = null;
-        Store.dispatch({ type: 'READY' });
+      if (this._timeUntilCameraMoves > 0) {
+        this._timeUntilCameraMoves -= dt;
+      } else {
+        this.terrain.updateXPosition(-0.04);
+        this._nextTerrain.updateXPosition(-0.04);
+        if (this._nextTerrain._groundMesh.position.x <= 0) {
+          this._nextTerrain._previousPool = this.terrain._pool;
+          this._nextTerrain.updateXPosition(
+            -this._nextTerrain._groundMesh.position.x
+          );
+          this._isAdvancing = false;
+          this.terrain.destroy();
+          this.terrain = this._nextTerrain;
+          this._nextTerrain = null;
+          Store.dispatch({ type: 'READY' });
+        }
       }
     }
   }
@@ -79,6 +83,7 @@ export default class World {
     if (!this._isAdvancing) {
       this._nextTerrain = new Terrain(this.terrain);
       this._isAdvancing = true;
+      this._timeUntilCameraMoves = 1.5;
     }
   }
 

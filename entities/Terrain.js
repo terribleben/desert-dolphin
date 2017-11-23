@@ -64,7 +64,7 @@ export default class Terrain {
   }
 
   isInPool = (x) => {
-    const delta = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.15;
+    const delta = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.05;
     const { spanIndex } = this._scaledPosition(x - delta);
     if (spanIndex == this._poolIndex) {
       return true;
@@ -78,6 +78,14 @@ export default class Terrain {
     return TERRAIN_NEUTRAL_Y +
       (this._spans[spanIndex][0] * (1.0 - interp)) +
       (this._spans[spanIndex][1] * (interp));
+  }
+
+  getPoolY = (x) => {
+    const poolWidth = (GameState.viewport.width / TERRAIN_NUM_SPANS);
+    const spanCenterX = (Math.floor(x / poolWidth) + 0.5) * poolWidth;
+    const leftY = this.getTerrainY(spanCenterX - poolWidth * 0.49),
+          rightY = this.getTerrainY(spanCenterX + poolWidth * 0.49);
+    return Math.max(leftY, rightY);
   }
 
   getAngle = (x) => {

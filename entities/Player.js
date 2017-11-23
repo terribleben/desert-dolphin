@@ -80,22 +80,23 @@ export default class Player {
       this._reset();
     }
     if (this._mesh.position.y < terrainY) {
+      const terrainAngle = GameState.world.terrain.getAngle(this._mesh.position.x);
+      const diffVelocityTerrainAngle = diffAngle(
+        this._velocity.angle(),
+        terrainAngle
+      );
+      const normalAngle = terrainAngle + Math.PI * -0.5;
+      const normalMag = this._velocity.length() * Math.sin(diffVelocityTerrainAngle);
+      const normal = new THREE.Vector2(
+        normalMag * Math.cos(normalAngle),
+        normalMag * Math.sin(normalAngle)
+      );
       if (GameState.world.terrain.isInPool(this._mesh.position.x)) {
         Store.dispatch({ type: 'HIT' });
+        GameState.world.particleManager.splash(this._mesh.position, normal);
         this._reset();
       } else {
         const prevVelocity = this._velocity.clone();
-        const terrainAngle = GameState.world.terrain.getAngle(this._mesh.position.x);
-        const diffVelocityTerrainAngle = diffAngle(
-          this._velocity.angle(),
-          terrainAngle
-        );
-        const normalAngle = terrainAngle + Math.PI * -0.5;
-        const normalMag = this._velocity.length() * Math.sin(diffVelocityTerrainAngle);
-        const normal = new THREE.Vector2(
-          normalMag * Math.cos(normalAngle),
-          normalMag * Math.sin(normalAngle)
-        );
         this._velocity.add(normal);
         if (Math.abs(normalMag) > 0.02) {
           GameState.world.particleManager.dustBurst(this._mesh.position, normal, 7);
