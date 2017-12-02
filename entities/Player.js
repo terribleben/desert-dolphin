@@ -50,32 +50,20 @@ export default class Player {
     this._mesh.position.x += this._velocity.x;
     this._mesh.position.y += this._velocity.y;
 
-    const terrainY = GameState.world.terrain.getTerrainY(this._mesh.position.x);
-
-    if (this._resetIfOutsideViewport(terrainY)) {
+    if (this._resetIfOutsideViewport()) {
       return;
     }
-    if (this._mesh.position.y < terrainY) {
-      const terrainAngle = GameState.world.terrain.getAngle(this._mesh.position.x);
-      const diffVelocityTerrainAngle = diffAngle(
-        this._velocity.angle(),
-        terrainAngle
-      );
-      const normalAngle = terrainAngle + Math.PI * -0.5;
-      const normalMag = this._velocity.length() * Math.sin(diffVelocityTerrainAngle);
-      const normal = new THREE.Vector2(
-        normalMag * Math.cos(normalAngle),
-        normalMag * Math.sin(normalAngle)
-      );
+    const collision = GameState.world.terrain.getCollision(this._mesh.position, this._velocity);
+    if (collision.isIntersected) {
       if (GameState.world.terrain.isInPool(this._mesh.position.x)) {
         Store.dispatch({ type: 'HIT' });
-        GameState.world.particleManager.splash(this._mesh.position, normal);
+        GameState.world.particleManager.splash(collision.intersection, collision.normal);
         this._reset();
       } else {
         const prevVelocity = this._velocity.clone();
-        this._velocity.add(normal);
-        if (Math.abs(normalMag) > 0.02) {
-          GameState.world.particleManager.dustBurst(this._mesh.position, normal, 7);
+        this._velocity.add(collision.normal);
+        if (Math.abs(collision.normal.length()) > 0.02) {
+          GameState.world.particleManager.dustBurst(collision.intersection, collision.normal, 7);
         }
         const isImpactDeadly = (
           this._velocity.length() < 0.007
@@ -83,18 +71,15 @@ export default class Player {
             || (Math.abs(diffAngle(this._velocity.angle(), prevVelocity.angle())) > Math.PI * 0.4)
         );
         if (isImpactDeadly) {
-          this._missAndReset(terrainY);
+          // ur ded
+          this._missAndReset(collision.intersection);
         } else {
-          // friction
-          const frictionAngle = terrainAngle - Math.PI,
-                frictionMag = this._velocity.length() * 0.18;
-          this._velocity.add(new THREE.Vector2(
-            frictionMag * Math.cos(frictionAngle),
-            frictionMag * Math.sin(frictionAngle)
-          ));
-          this._mesh.position.y = terrainY;
+          // slide along terrain
+          this._velocity.add(collision.friction);
+          this._mesh.position.x = collision.intersection.x;
+          this._mesh.position.y = collision.intersection.y + 0.0018;
           this._updateRotation();
-          GameState.world.particleManager.dustBurst(this._mesh.position, this._velocity, 2);
+          GameState.world.particleManager.dustBurst(collision.intersection, this._velocity, 2);
         }
       }
     } else {
@@ -102,16 +87,17 @@ export default class Player {
     }
   }
 
-  _resetIfOutsideViewport = (terrainY) => {
-    if (this._mesh.position.x > GameState.viewport.width * 0.5 || this._mesh.position.x < GameState.viewport.width * -0.5) {
-      this._missAndReset(terrainY);
+  _resetIfOutsideViewport = () => {
+    const buffer = 0.1;
+    if (this._mesh.position.x > (GameState.viewport.width * 0.5) + buffer || this._mesh.position.x < (GameState.viewport.width * -0.5) - buffer) {
+      this._missAndReset(this._mesh.position);
       return true;
     }
     return false;
   }
 
-  _missAndReset = (missY) => {
-    Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: missY }, rotation: this._mesh.rotation.z });
+  _missAndReset = (position) => {
+    Store.dispatch({ type: 'MISS', position, rotation: this._mesh.rotation.z });
     this._reset();
   }
 
