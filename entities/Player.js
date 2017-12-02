@@ -1,42 +1,19 @@
 import Arrow from './Arrow';
 import GameState from '../state/GameState';
+import { diffAngle } from '../util/Geometry';
 import * as THREE from 'three';
 import { PixelRatio } from 'react-native';
 import Scope from './Scope';
 import Store from '../redux/Store';
 import TextureManager from '../assets/TextureManager';
 
-const TWOPI = Math.PI * 2.0;
 const SCREEN_SCALE = PixelRatio.get();
-
-function diffAngle(a, b) {
-  while (a > TWOPI)  a -= TWOPI;
-  while (b > TWOPI)  b -= TWOPI;
-  while (a < 0)  a += TWOPI;
-  while (b < 0) b += TWOPI;
-
-  let diff = a - b;
-  if (Math.abs(diff) <= Math.PI) {
-    return diff;
-  }
-
-  while (a > Math.PI)  a -= TWOPI;
-  while (b > Math.PI)  b -= TWOPI;
-  while (a < -Math.PI)  a += TWOPI;
-  while (b < -Math.PI)  b += TWOPI;
-
-  return a - b;
-}
 
 export default class Player {
   constructor() {
     this._isReady = false;
     this._arrow = new Arrow();
     this._scope = new Scope();
-    this._buildMeshAsync();
-  }
-
-  _buildMeshAsync = async () => {
     const scene = GameState.scene;
     const geometry = new THREE.PlaneBufferGeometry(0.15, 0.15);
     this._material = new THREE.MeshBasicMaterial({
@@ -75,9 +52,8 @@ export default class Player {
 
     const terrainY = GameState.world.terrain.getTerrainY(this._mesh.position.x);
 
-    if (this._mesh.position.x > GameState.viewport.width * 0.5 || this._mesh.position.x < GameState.viewport.width * -0.5) {
-      Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
-      this._reset();
+    if (this._resetIfOutsideViewport(terrainY)) {
+      return;
     }
     if (this._mesh.position.y < terrainY) {
       const terrainAngle = GameState.world.terrain.getAngle(this._mesh.position.x);
@@ -107,8 +83,7 @@ export default class Player {
             || (Math.abs(diffAngle(this._velocity.angle(), prevVelocity.angle())) > Math.PI * 0.4)
         );
         if (isImpactDeadly) {
-          Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: terrainY }, rotation: this._mesh.rotation.z });
-          this._reset();
+          this._missAndReset(terrainY);
         } else {
           // friction
           const frictionAngle = terrainAngle - Math.PI,
@@ -127,6 +102,19 @@ export default class Player {
     }
   }
 
+  _resetIfOutsideViewport = (terrainY) => {
+    if (this._mesh.position.x > GameState.viewport.width * 0.5 || this._mesh.position.x < GameState.viewport.width * -0.5) {
+      this._missAndReset(terrainY);
+      return true;
+    }
+    return false;
+  }
+
+  _missAndReset = (missY) => {
+    Store.dispatch({ type: 'MISS', position: { x: this._mesh.position.x, y: missY }, rotation: this._mesh.rotation.z });
+    this._reset();
+  }
+
   _updateRotation = () => {
     if (this._isJumping) {
       if (this._velocity.x >= 0) {
@@ -134,7 +122,7 @@ export default class Player {
         this._mesh.rotation.z = this._velocity.angle();
       } else {
         this._mesh.scale.x = -1;
-        this._mesh.rotation.z = this._velocity.angle() + 3.142;
+        this._mesh.rotation.z = this._velocity.angle() + Math.PI;
       }
     }
   }
