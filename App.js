@@ -6,7 +6,15 @@ import Store from './redux/Store';
 
 export default class App extends React.Component {
   componentWillMount() {
-    console.disableYellowBox = true;
+    const oldWarn = console.warn;
+    console.warn = (str) => {
+      if (str.indexOf('THREE') !== -1) {
+        // don't provide stack traces for warnspew from THREE
+        console.log('Warning:', str);
+        return;
+      }
+      return oldWarn.apply(console, [str]);
+    }
   }
   
   render() {
