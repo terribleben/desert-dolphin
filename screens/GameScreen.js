@@ -99,11 +99,12 @@ class GameScreen extends React.Component {
     const { camera, viewport } = this._buildCameraAndViewport(gl);
     GameState.camera = camera;
     GameState.viewport = viewport;
-    this._renderer = ExpoTHREE.createRenderer({ gl });
-    this._renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
 
     GameState.world = new World();
     await GameState.world.loadAsync();
+
+    this._renderer = ExpoTHREE.createRenderer({ gl });
+    this._renderer.setSize(gl.drawingBufferWidth, gl.drawingBufferHeight);
     return;
   }
 

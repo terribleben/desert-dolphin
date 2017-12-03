@@ -11,18 +11,24 @@ import TextureManager from '../assets/TextureManager';
 
 export default class World {
   constructor() {
-    const geometry = new THREE.PlaneBufferGeometry(GameState.viewport.width, GameState.viewport.height);
-    const bgMaterial = new THREE.MeshBasicMaterial( { color: 0xddac67 } );
-    const bgMesh = new THREE.Mesh(geometry, bgMaterial);
-    bgMesh.position.z = -99;
-    GameState.scene.add(bgMesh);
-
     this._isAdvancing = false;
     this._nextTerrain = null;
   }
 
   loadAsync = async () => {
     await TextureManager.loadAsync();
+    
+    const geometry = new THREE.PlaneBufferGeometry(GameState.viewport.width, GameState.viewport.height);
+    const bgMaterial = new THREE.MeshBasicMaterial({ color: 0xddac67 });
+    const bgMesh = new THREE.Mesh(geometry, bgMaterial);
+    bgMesh.position.z = -99;
+    GameState.scene.add(bgMesh);
+
+    this._overlayMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    this._overlayMesh = new THREE.Mesh(geometry, this._overlayMaterial);
+    this._overlayMesh.position.z = 99;
+    GameState.scene.add(this._overlayMesh);
+    
     this.terrain = new Terrain();
     this.player = new Player();
     this.particleManager = new ParticleManager();
@@ -36,6 +42,7 @@ export default class World {
     ];
     requestAnimationFrame(() => {
       objectsToRenderOnce.forEach(obj => { obj.destroy(); });
+      this._isFadingIn = true;
       Store.dispatch({ type: 'READY' });
     });
 
@@ -43,6 +50,7 @@ export default class World {
   }
 
   onGameReady = () => {
+    this._isGameReady = true;
     this.player.onGameReady();
   }
 
@@ -63,11 +71,26 @@ export default class World {
       this.particleManager.destroy();
       this.particleManager = null;
     }
+    if (this._overlayMesh) {
+      GameState.scene.remove(this._overlayMesh);
+      this._overlayMesh = null;
+      this._overlayMaterial = null;
+      this._isFadingIn = false;
+    }
   }
 
   tick = (dt) => {
     this.player.tick(dt);
     this.particleManager.tick(dt);
+    if (this._isFadingIn) {
+      // need to wait to set transparent otherwise we encounter rendering issues during load
+      this._overlayMaterial.transparent = true;
+      this._overlayMaterial.opacity -= 0.008;
+      if (this._overlayMaterial.opacity <= 0) {
+        GameState.scene.remove(this._overlayMesh);
+        this._isFadingIn = false;
+      }
+    }
     if (this._isAdvancing) {
       if (this._timeUntilCameraMoves > 0) {
         this._timeUntilCameraMoves -= dt;
@@ -90,7 +113,7 @@ export default class World {
   }
 
   isInteractionAvailable = () => {
-    return (!!this.player && !this._isAdvancing);
+    return (!!this.player && !this._isAdvancing && this._isGameReady && !this._isFadingIn);
   }
 
   advanceLevel = () => {
