@@ -10,7 +10,7 @@ const POOL_TERRAIN_DEPTH = 0.1;
 export default class Terrain {
   constructor(previousTerrain) {
     const scene = GameState.scene;
-    this._poolIndex = 5 + Math.ceil(Math.random() * 5);
+    this._poolIndex = this._computePoolIndex(previousTerrain);
     this._spans = this._generateTerrain(0, previousTerrain);
     this._collisionMap = this._generateCollisionMap(this._spans);
 
@@ -211,6 +211,16 @@ export default class Terrain {
       return this._spans[TERRAIN_NUM_SPANS - 1][1];
     }
     return 0;
+  }
+
+  _computePoolIndex = (previousTerrain) => {
+    let minIndex = 5, maxIndex = TERRAIN_NUM_SPANS - 2;
+    if (previousTerrain) {
+      // our 0th span is previousTerrain's (poolIndex - 1) span
+      // and we don't want our pool to appear while the previous one is still visible.
+      minIndex = Math.max(minIndex, TERRAIN_NUM_SPANS - (previousTerrain._poolIndex - 1));
+    }
+    return minIndex + Math.ceil(Math.random() * (maxIndex - minIndex));
   }
 
   _generateTerrain = (startY, previousTerrain) => {
