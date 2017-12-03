@@ -3,6 +3,7 @@ import GameState from '../state/GameState';
 import Terrain from '../entities/Terrain';
 import * as THREE from 'three';
 import Loser from '../entities/Loser';
+import Particle from './Particle';
 import ParticleManager from './ParticleManager';
 import Player from '../entities/Player';
 import Store from '../redux/Store';
@@ -25,7 +26,20 @@ export default class World {
     this.terrain = new Terrain();
     this.player = new Player();
     this.particleManager = new ParticleManager();
-    return Store.dispatch({ type: 'READY' });
+
+    // because I can't figure out how to get THREE to stop lagging
+    // on the first time it renders a texture.
+    const objectsToRenderOnce = [
+      new Loser(new THREE.Vector2(), 0),
+      new Particle({ materialKey: TextureManager.PARTICLE_WATER }),
+      new Particle({ materialKey: TextureManager.PARTICLE_DUST }),
+    ];
+    requestAnimationFrame(() => {
+      objectsToRenderOnce.forEach(obj => { obj.destroy(); });
+      Store.dispatch({ type: 'READY' });
+    });
+
+    return;
   }
 
   onGameReady = () => {
