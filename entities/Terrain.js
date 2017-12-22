@@ -2,16 +2,14 @@ import * as THREE from 'three';
 import GameState from '../state/GameState';
 import { diffAngle } from '../util/Geometry';
 import Pool from './Pool';
-
-const TERRAIN_NUM_SPANS = 12;
-const TERRAIN_NEUTRAL_Y = 0.0;
-const POOL_TERRAIN_DEPTH = 0.1;
+import TerrainGenerator from './TerrainGenerator';
 
 export default class Terrain {
-  constructor(previousTerrain) {
+  constructor(randomSeed, previousTerrain) {
     const scene = GameState.scene;
-    this._poolIndex = this._computePoolIndex(previousTerrain);
-    this._spans = this._generateTerrain(0, previousTerrain);
+    const { poolIndex, spans } = new TerrainGenerator(randomSeed, previousTerrain).generate();
+    this._poolIndex = poolIndex;
+    this._spans = spans;
     this._collisionMap = this._generateCollisionMap(this._spans);
 
     this._groundMaterial = new THREE.MeshBasicMaterial({ color: 0xe28631 });
@@ -19,12 +17,12 @@ export default class Terrain {
     this._groundMesh.position.z = 1;
     scene.add(this._groundMesh);
 
-    const poolX = GameState.viewport.width * -0.5 + (GameState.viewport.width / TERRAIN_NUM_SPANS) * (this._poolIndex + 0.5);
+    const poolX = GameState.viewport.width * -0.5 + (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * (this._poolIndex + 0.5);
     this._pool = new Pool(this, poolX);
 
     if (previousTerrain) {
       const indexIntoPreviousTerrain = previousTerrain._poolIndex - 1;
-      const initialXPosition = (GameState.viewport.width / TERRAIN_NUM_SPANS) * indexIntoPreviousTerrain;
+      const initialXPosition = (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * indexIntoPreviousTerrain;
       this.updateXPosition(initialXPosition);
     }
   }
@@ -65,7 +63,7 @@ export default class Terrain {
   }
 
   isInPool = (x) => {
-    const delta = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.1;
+    const delta = (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * 0.1;
     const { spanIndex } = this._scaledPosition(x - delta);
     if (spanIndex == this._poolIndex) {
       return true;
@@ -76,13 +74,13 @@ export default class Terrain {
 
   getTerrainY = (x) => {
     let { spanIndex, interp } = this._scaledPosition(x);
-    return TERRAIN_NEUTRAL_Y +
+    return TerrainGenerator.NEUTRAL_Y +
       (this._spans[spanIndex][0] * (1.0 - interp)) +
       (this._spans[spanIndex][1] * (interp));
   }
 
   getPoolY = (x) => {
-    const poolWidth = (GameState.viewport.width / TERRAIN_NUM_SPANS);
+    const poolWidth = (GameState.viewport.width / TerrainGenerator.NUM_SPANS);
     const spanCenterX = (Math.floor(x / poolWidth) + 0.5) * poolWidth;
     const leftY = this.getTerrainY(spanCenterX - poolWidth * 0.49),
           rightY = this.getTerrainY(spanCenterX + poolWidth * 0.49);
@@ -149,7 +147,7 @@ export default class Terrain {
   }
 
   getAngle = (x) => {
-    const quarterSpan = (GameState.viewport.width / TERRAIN_NUM_SPANS) * 0.01;
+    const quarterSpan = (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * 0.01;
     const yLeft = this.getTerrainY(x - quarterSpan),
           yRight = this.getTerrainY(x + quarterSpan);
     
@@ -176,7 +174,7 @@ export default class Terrain {
 
   _scaledPosition = (worldX) => {
     const viewportX = ((worldX + GameState.viewport.width * 0.5) / GameState.viewport.width);
-    const spanIndexFloat = Math.max(0, Math.min(0.999, viewportX)) * (TERRAIN_NUM_SPANS);
+    const spanIndexFloat = Math.max(0, Math.min(0.999, viewportX)) * (TerrainGenerator.NUM_SPANS);
     const spanIndex = Math.floor(spanIndexFloat);
     const interp = spanIndexFloat - spanIndex;
     return { spanIndex, interp };
@@ -190,15 +188,15 @@ export default class Terrain {
 
     // (interpolating, 1 + value)
     const depths = [ 0.1, -0.1, 0.05, -0.05, 0.2 ];
-    for (let ii = 0; ii < TERRAIN_NUM_SPANS; ii++) {
-      let xInterpLeft = ii / (TERRAIN_NUM_SPANS);
-      let xInterpRight = (ii + 1) / (TERRAIN_NUM_SPANS);
+    for (let ii = 0; ii < TerrainGenerator.NUM_SPANS; ii++) {
+      let xInterpLeft = ii / (TerrainGenerator.NUM_SPANS);
+      let xInterpRight = (ii + 1) / (TerrainGenerator.NUM_SPANS);
       let span = spans[ii];
-      shape.lineTo(-(viewport.width / 2) + (xInterpLeft * width), TERRAIN_NEUTRAL_Y + span[0]);
-      shape.lineTo(-(viewport.width / 2) + (xInterpRight * width), TERRAIN_NEUTRAL_Y + span[1]);
+      shape.lineTo(-(viewport.width / 2) + (xInterpLeft * width), TerrainGenerator.NEUTRAL_Y + span[0]);
+      shape.lineTo(-(viewport.width / 2) + (xInterpRight * width), TerrainGenerator.NEUTRAL_Y + span[1]);
     }
     // neutral top-right corner
-    shape.lineTo(viewport.width / 2, TERRAIN_NEUTRAL_Y);
+    shape.lineTo(viewport.width / 2, TerrainGenerator.NEUTRAL_Y);
 
     // bottom two corners
     shape.lineTo(viewport.width / 2, -viewport.height / 2);
@@ -208,54 +206,9 @@ export default class Terrain {
 
   getFinalY = () => {
     if (this._spans) {
-      return this._spans[TERRAIN_NUM_SPANS - 1][1];
+      return this._spans[TerrainGenerator.NUM_SPANS - 1][1];
     }
     return 0;
-  }
-
-  _computePoolIndex = (previousTerrain) => {
-    let minIndex = 5, maxIndex = TERRAIN_NUM_SPANS - 2;
-    if (previousTerrain) {
-      // our 0th span is previousTerrain's (poolIndex - 1) span
-      // and we don't want our pool to appear while the previous one is still visible.
-      minIndex = Math.max(minIndex, TERRAIN_NUM_SPANS - (previousTerrain._poolIndex - 1));
-    }
-    return minIndex + Math.ceil(Math.random() * (maxIndex - minIndex));
-  }
-
-  _generateTerrain = (startY, previousTerrain) => {
-    let spans = [];
-    let prevY = startY;
-    let indexIntoPreviousTerrain;
-    if (previousTerrain) {
-      indexIntoPreviousTerrain = previousTerrain._poolIndex - 1;
-    }
-    for (let ii = 0; ii < TERRAIN_NUM_SPANS; ii++) {
-      let span;
-      if (previousTerrain && indexIntoPreviousTerrain && indexIntoPreviousTerrain < TERRAIN_NUM_SPANS) {
-        span = previousTerrain._spans[indexIntoPreviousTerrain];
-        prevY = span[1];
-        indexIntoPreviousTerrain++;
-      } else if (ii == this._poolIndex) {
-        span = [
-          prevY - POOL_TERRAIN_DEPTH,
-          prevY - 0.05 + Math.random() * 0.1 - POOL_TERRAIN_DEPTH,
-        ];
-        prevY = span[1] + POOL_TERRAIN_DEPTH + 0.05;
-      } else {
-        const isDiscontinuous = (Math.random() < 0.2 && (ii - 1 !== this._poolIndex));
-        if (isDiscontinuous) {
-          prevY = -0.1 + Math.random() * 0.2;
-        }
-        span = [
-          prevY,
-          prevY - 0.1 + Math.random() * 0.2,
-        ];
-        prevY = span[1];
-      }
-      spans.push(span);
-    }
-    return spans;
   }
 
   /**
@@ -264,7 +217,7 @@ export default class Terrain {
    */
   _generateCollisionMap = (spans) => {
     let collisionMap = {};
-    const spanWidth = GameState.viewport.width / TERRAIN_NUM_SPANS;
+    const spanWidth = GameState.viewport.width / TerrainGenerator.NUM_SPANS;
     const viewportBottom = -(GameState.viewport.height / 2);
     const buffer = 0.1;
     let xLeft = -(GameState.viewport.width / 2);

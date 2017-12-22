@@ -29,7 +29,7 @@ export default class World {
     this._overlayMesh.position.z = 99;
     GameState.scene.add(this._overlayMesh);
     
-    this.terrain = new Terrain();
+    this.terrain = new Terrain(this._getTerrainSeed());
     this.player = new Player();
     this.particleManager = new ParticleManager();
 
@@ -118,7 +118,7 @@ export default class World {
 
   advanceLevel = () => {
     if (!this._isAdvancing) {
-      this._nextTerrain = new Terrain(this.terrain);
+      this._nextTerrain = new Terrain(this._getTerrainSeed(), this.terrain);
       this._isAdvancing = true;
       this._timeUntilCameraMoves = 1.5;
     }
@@ -127,5 +127,11 @@ export default class World {
   addLoser = (position, rotation) => {
     const loser = new Loser(position, rotation);
     this.terrain.addLoser(loser);
+  }
+
+  _getTerrainSeed = () => {
+    // seed is dependent on what level we've reached
+    const state = Store.getState();
+    return (state.hit) ? state.hit : 0;
   }
 }
