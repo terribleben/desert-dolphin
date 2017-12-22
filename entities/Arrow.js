@@ -26,8 +26,13 @@ export default class Arrow {
     scene.remove(this._mesh);
   }
 
+  getPanBounds = () => {
+    const minPanLength = GameState.viewport.screenHeight * 0.15,
+          maxPanLength = GameState.viewport.screenHeight * 0.4;
+    return { minPanLength, maxPanLength };
+  }
+
   onTouchBegin = (touch) => {
-    this._material.opacity = 1;
     const { x, y } = touch;
     const viewportCoords = this._toViewportCoords({ x, y });
     this._mesh.position.x = viewportCoords.x;
@@ -40,6 +45,8 @@ export default class Arrow {
     const v = new THREE.Vector2(translationX, -translationY);
     this._mesh.rotation.z = v.angle();
     this._mesh.scale.x = v.length() * -0.1;
+    const { minPanLength } = this.getPanBounds();
+    this._material.opacity = (v.length() * SCREEN_SCALE > minPanLength) ? 1 : 0.4;
   }
 
   onTouchEnd = (touch) => {

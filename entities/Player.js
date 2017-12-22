@@ -134,15 +134,17 @@ export default class Player {
   onTouchEnd = (touch) => {
     if (this._isInteractionAvailable() && this._hasTouch) {
       this._arrow.onTouchEnd(touch);
-      this._isJumping = true;
       this._hasTouch = false;
       let pan = new THREE.Vector2(touch.translationX * SCREEN_SCALE, touch.translationY * SCREEN_SCALE);
-      const maxPanLength = GameState.viewport.screenHeight * 0.4;
-      pan.clampLength(-maxPanLength, maxPanLength);
-      pan.multiplyScalar(0.0005 / SCREEN_SCALE);
-      this._velocity.x = -pan.x;
-      this._velocity.y = pan.y;
-      this._scope.setIsVisible(false);
+      const { minPanLength, maxPanLength } = this._arrow.getPanBounds();
+      if (Math.abs(pan.length()) >= minPanLength) {
+        pan.clampLength(-maxPanLength, maxPanLength);
+        pan.multiplyScalar((GameState.viewport.screenHeight / 1280000) / SCREEN_SCALE);
+        this._isJumping = true;
+        this._velocity.x = -pan.x;
+        this._velocity.y = pan.y;
+        this._scope.setIsVisible(false);
+      }
     }
   }
 
