@@ -7,8 +7,8 @@ import TerrainGenerator from './TerrainGenerator';
 export default class Terrain {
   constructor(randomSeed, previousTerrain) {
     const scene = GameState.scene;
-    const { poolIndex, spans } = new TerrainGenerator(randomSeed, previousTerrain).generate();
-    this._poolIndex = poolIndex;
+    const { poolRange, spans } = new TerrainGenerator(randomSeed, previousTerrain).generate();
+    this._poolRange = poolRange;
     this._spans = spans;
     this._collisionMap = this._generateCollisionMap(this._spans);
 
@@ -17,11 +17,10 @@ export default class Terrain {
     this._groundMesh.position.z = 1;
     scene.add(this._groundMesh);
 
-    const poolX = GameState.viewport.width * -0.5 + (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * (this._poolIndex + 0.5);
-    this._pool = new Pool(this, poolX);
+    this._pool = new Pool(this);
 
     if (previousTerrain) {
-      const indexIntoPreviousTerrain = previousTerrain._poolIndex - 1;
+      const indexIntoPreviousTerrain = previousTerrain._poolRange.begin - 1;
       const initialXPosition = (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * indexIntoPreviousTerrain;
       this.updateXPosition(initialXPosition);
     }
@@ -65,11 +64,11 @@ export default class Terrain {
   isInPool = (x) => {
     const delta = (GameState.viewport.width / TerrainGenerator.NUM_SPANS) * 0.1;
     const { spanIndex } = this._scaledPosition(x - delta);
-    if (spanIndex == this._poolIndex) {
+    if (spanIndex >= this._poolRange.begin && spanIndex <= this._poolRange.end) {
       return true;
     }
     const { otherSpanIndex } = this._scaledPosition(x + delta);
-    return (otherSpanIndex == this._poolIndex);
+    return (otherSpanIndex == this._poolRange.end);
   }
 
   getTerrainY = (x) => {
@@ -80,10 +79,12 @@ export default class Terrain {
   }
 
   getPoolY = (x) => {
-    const poolWidth = (GameState.viewport.width / TerrainGenerator.NUM_SPANS);
-    const spanCenterX = (Math.floor(x / poolWidth) + 0.5) * poolWidth;
-    const leftY = this.getTerrainY(spanCenterX - poolWidth * 0.49),
-          rightY = this.getTerrainY(spanCenterX + poolWidth * 0.49);
+    const spanWidth = (GameState.viewport.width / TerrainGenerator.NUM_SPANS);
+    const numPoolSpans = (1 + this._poolRange.end - this._poolRange.begin);
+    const poolWidth = spanWidth * numPoolSpans;
+    const poolCenterX = (Math.floor(x / spanWidth) + (numPoolSpans * 0.5)) * spanWidth;
+    const leftY = this.getTerrainY(poolCenterX - poolWidth * 0.49),
+          rightY = this.getTerrainY(poolCenterX + poolWidth * 0.49);
     return Math.max(leftY, rightY);
   }
 
