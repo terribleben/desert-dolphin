@@ -120,6 +120,7 @@ export default class Player {
   onTouchBegin = (touch) => {
     if (this._isInteractionAvailable()) {
       this._arrow.onTouchBegin(touch);
+      this._scope.setIsVisible(false);
       this._hasTouch = true;
     }
   }
@@ -143,7 +144,8 @@ export default class Player {
         this._isJumping = true;
         this._velocity.x = -pan.x;
         this._velocity.y = pan.y;
-        this._scope.setIsVisible(false);
+      } else {
+        this._scope.setIsVisible(true);
       }
     }
   }
